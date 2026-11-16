@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monify Minimal - Gestión Financiera Inteligente</title>
+    <!-- Chart.js con respaldo de seguridad local/online -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 19px;
+            font-weight: 900;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .app-container {
+            width: 100%;
+            max-width: 540px;
+            background-color: #0d1117;
+            border: 4px solid #00FF00;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,255,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        /* Indicador en Esquina */
+        .corner-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #008800;
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 900;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 2px solid #FFFFFF;
+        }
+        .corner-badge.exceeded {
+            background-color: #CC0000;
+        }
+
+        /* Selector General */
+        .month-selector {
+            background-color: #161b22;
+            border: 3px solid #00FF00;
+            color: #FFFF00;
+            font-size: 17px;
+            font-weight: 900;
+            padding: 10px 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header-title {
+            color: #FFFF00;
+            font-size: 26px;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+        .header-subtitle {
+            color: #FFFFFF;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* Banner de Alertas */
+        .alert-banner {
+            background-color: #3b1c00;
+            border: 3px solid #FFA500;
+            color: #FFD700;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 900;
+            display: none;
+            line-height: 1.4;
+        }
+
+        /* Tarjeta de Gráficos y Saldo */
+        .card-chart {
+            background-color: #161b22;
+            border: 3px solid #444444;
+            border-radius: 15px;
+            padding: 15px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .chart-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+        }
+        .chart-center-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+        }
+        .balance-label { font-size: 14px; color: #CCCCCC; font-weight: 700; }
+        .balance-value { font-size: 24px; font-weight: 900; color: #00FF00; }
+
+        .info-extras {
+            font-size: 14px;
+            color: #FFFFFF;
+            font-weight: 700;
+            margin-top: 12px;
+            background: #000000;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #FFFF00;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .btn-toggle-chart {
+            background-color: #21262d;
+            color: #FFFF00;
+            border: 2px solid #FFFF00;
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        /* Asistente de Voz */
+        .voice-box {
+            background-color: #0b2222;
+            border: 3px solid #00FFFF;
+            color: #00FFFF;
+            padding: 12px;
+            border-radius: 10px;
+            width: 100%;
+            text-align: center;
+            font-weight: 900;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        /* Botones de Acción */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        button {
+            border: 3px solid #FFFFFF;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 900;
+            padding: 14px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        button:active { transform: scale(0.98); }
+        .btn-ingreso { background-color: #008800; color: #FFFFFF; border-color: #00FF00; }
+        .btn-gasto { background-color: #CC0000; color: #FFFFFF; border-color: #FF5555; }
+        .btn-presupuesto { background-color: #D35400; color: #FFFFFF; border-color: #FFA500; }
+        .btn-meta { background-color: #8E44AD; color: #FFFFFF; border-color: #DA70D6; }
+        .btn-ahorros { background-color: #2980B9; color: #FFFFFF; border-color: #00BFFF; }
+        .btn-evento { background-color: #16A085; color: #FFFFFF; border-color: #20B2AA; }
+        .btn-voz { background-color: #008B8B; color: #FFFFFF; grid-column: span 2; font-size: 18px; border-color: #00FFFF; }
+        
+        .btn-leer-ingresos { background-color: #1E8449; color: #FFFFFF; border-color: #2ECC71; }
+        .btn-leer-gastos { background-color: #B03A2E; color: #FFFFFF; border-color: #E74C3C; }
+        .btn-leer-ahorros { background-color: #2471A3; color: #FFFFFF; border-color: #5499C7; grid-column: span 2; }
+        
+        .btn-borrar { background-color: #2C3E50; color: #FF6B6B; grid-column: span 2; font-size: 14px; padding: 10px; border: 2px dashed #FF6B6B; }
+
+        /* Contenedores */
+        .section-box {
+            background-color: #161b22;
+            border: 2px solid #444444;
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+        .item-row {
+            border-bottom: 1px solid #333333;
+            padding: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Estilo Calendario Interactivo */
+        .cal-header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .cal-nav-btn {
+            background-color: #21262d;
+            color: #FFFF00;
+            border: 2px solid #FFFF00;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+        }
+        .cal-title-month {
+            color: #FFFF00;
+            font-size: 16px;
+            font-weight: 900;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            font-size: 13px;
+        }
+        .cal-day-header { font-weight: 900; color: #FFFF00; padding: 3px; }
+        .cal-day {
+            background-color: #0d1117;
+            border: 2px solid #333333;
+            padding: 6px 2px;
+            border-radius: 6px;
+            min-height: 45px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .cal-day:hover { border-color: #00FF00; background-color: #112211; }
+        .cal-day.selected { border-color: #00FFFF; background-color: #0b3333; }
+        .cal-day.has-event { border-color: #FFA500; background-color: #2c1f0b; }
+        .cal-day.has-trans { border-color: #00FF00; background-color: #0b220b; }
+        .cal-dot {
+            width: 6px;
+            height: 6px;
+            background-color: #00FF00;
+            border-radius: 50%;
+            margin-top: 3px;
+        }
+        .cal-dot-event { background-color: #FFA500; }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Indicador esquina -->
+        <div id="cornerBadge" class="corner-badge">🟢 En Límite</div>
+
+        <!-- Título -->
+        <div class="header-title">Monify Minimal</div>
+        <div class="header-subtitle">Gestión Financiera, Ahorros y Calendario Interactivo</div>
+
+        <!-- Selector General de Año/Mes -->
+        <select id="mesSelector" class="month-selector" onchange="cambiarMesAnioDesdeSelector()">
+            <option value="2026-0">Enero 2026</option>
+            <option value="2026-1">Febrero 2026</option>
+            <option value="2026-2">Marzo 2026</option>
+            <option value="2026-3">Abril 2026</option>
+            <option value="2026-4">Mayo 2026</option>
+            <option value="2026-5">Junio 2026</option>
+            <option value="2026-6">Julio 2026</option>
+            <option value="2026-7">Agosto 2026</option>
+            <option value="2026-8">Septiembre 2026</option>
+            <option value="2026-9">Octubre 2026</option>
+            <option value="2026-10">Noviembre 2026</option>
+            <option value="2026-11" selected>Diciembre 2026</option>
+            <option value="2027-0">Enero 2027</option>
+            <option value="2027-1">Febrero 2027</option>
+        </select>
+
+        <!-- Banner de Alertas -->
+        <div id="alertBanner" class="alert-banner"></div>
+
+        <!-- Gráficos y Saldo -->
+        <div class="card-chart">
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+                <div class="chart-center-text" id="centerText">
+                    <div class="balance-label">Saldo Disponible</div>
+                    <div id="lblBalance" class="balance-value">S/. 0.00</div>
+                </div>
+            </div>
+            <button class="btn-toggle-chart" onclick="alternarTipoGrafico()">📊 Gráfico de Barras</button>
+            <div id="lblExtras" class="info-extras">
+                Presupuesto: S/. 0.00 | Ahorros Bloqueados: S/. 0.00 | Meta: S/. 0.00
+            </div>
+        </div>
+
+        <!-- Estado de Voz -->
+        <div id="lblVoiceStatus" class="voice-box">
+            🎤 Asistente listo. Ej: "Gasto 200 streaming", "Meta de ahorro 1000", "Depositar 200 a ahorros".
+        </div>
+
+        <!-- Botones de Acción -->
+        <div class="action-buttons">
+            <button class="btn-voz" onclick="iniciarReconocimientoVoz()">🎤 Dictar Comando por Voz</button>
+            <button class="btn-ingreso" onclick="registrarIngresoManual()">+ Ingreso</button>
+            <button class="btn-gasto" onclick="registrarGastoManual()">- Gasto</button>
+            <button class="btn-ahorros" onclick="gestionarAhorros()">💰 Ahorros</button>
+            <button class="btn-evento" onclick="programarEventoManual()">📅 Programar Evento</button>
+            <button class="btn-presupuesto" onclick="configurarPresupuesto()">Presupuesto</button>
+            <button class="btn-meta" onclick="configurarMeta()">Meta Ahorro</button>
+            
+            <button class="btn-leer-ingresos" onclick="leerIngresosDelMes()">🔊 Leer Ingresos del Mes</button>
+            <button class="btn-leer-gastos" onclick="leerGastosDelMes()">🔊 Leer Gastos del Mes</button>
+            <button class="btn-leer-ahorros" onclick="leerEstadoAhorros()">🔊 Leer Estado Ahorros</button>
+            
+            <button class="btn-borrar" onclick="borrarDatosMes()">Limpiar Mes Seleccionado</button>
+        </div>
+
+        <!-- Calendario Interactivo -->
+        <div class="section-box" style="max-height: 250px;">
+            <div class="cal-header-nav">
+                <button class="cal-nav-btn" onclick="navegarCalendario(-1)">◀ Mes Ant.</button>
+                <div id="calTitleMonth" class="cal-title-month">Diciembre 2026</div>
+                <button class="cal-nav-btn" onclick="navegarCalendario(1)">Mes Sig. ▶</button>
+            </div>
+            <div id="calendarioContainer" class="calendar-grid"></div>
+        </div>
+
+        <!-- Detalle del Día Seleccionado -->
+        <div class="section-box" style="border-color: #00FFFF; background-color: #051919;">
+            <strong id="lblDiaSeleccionadoTitulo" style="color: #00FFFF; font-size: 16px;">📌 Detalle del Día: Seleccione un día</strong>
+            <div id="listaDetalleDia" style="margin-top: 5px;"></div>
+        </div>
+
+        <!-- Eventos / Pagos Programados -->
+        <div class="section-box">
+            <strong style="color: #FFFF00; font-size: 16px;">Pagos y Eventos Programados:</strong>
+            <div id="listaEventos" style="margin-top: 5px;"></div>
+        </div>
+
+        <!-- Desglose por Categoría -->
+        <div class="section-box">
+            <strong style="color: #FFFF00; font-size: 16px;">Desglose de Gastos:</strong>
+            <div id="listaCategoriasDesglose" style="margin-top: 5px;"></div>
+        </div>
+
+        <!-- Historial de Movimientos Mensual -->
+        <div class="section-box">
+            <strong style="color: #FFFF00; font-size: 16px;">Historial de Movimientos Mensual:</strong>
+            <div id="listaHistorial" style="margin-top: 5px;"></div>
+        </div>
+    </div>
+
+    <script>
+        let anioVisual = 2026;
+        let mesVisual = 11;
+        let diaSeleccionado = null;
+
+        const nombresMeses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            try {
+                let hoy = new Date();
+                anioVisual = hoy.getFullYear();
+                mesVisual = hoy.getMonth();
+                diaSeleccionado = hoy.getDate();
+                sincronizarSelectorConVista();
+                cargarDatosMes();
+            } catch(e) {
+                console.error("Error al iniciar:", e);
+            }
+        });
+
+        function sincronizarSelectorConVista() {
+            let selector = document.getElementById('mesSelector');
+            if(!selector) return;
+            let valorBuscado = `${anioVisual}-${mesVisual}`;
+            let encontrado = false;
+            for (let opt of selector.options) {
+                if (opt.value === valorBuscado) {
+                    selector.value = valorBuscado;
+                    encontrado = true;
+                    break;
+                }
+            }
+            if (!encontrado) selector.value = "2026-11";
+        }
+
+        function cambiarMesAnioDesdeSelector() {
+            let selector = document.getElementById('mesSelector');
+            if(!selector) return;
+            let partes = selector.value.split('-');
+            anioVisual = parseInt(partes[0]);
+            mesVisual = parseInt(partes[1]);
+            diaSeleccionado = 1;
+            cargarDatosMes();
+        }
+
+        function navegarCalendario(delta) {
+            mesVisual += delta;
+            if (mesVisual > 11) {
+                mesVisual = 0;
+                anioVisual++;
+            } else if (mesVisual < 0) {
+                mesVisual = 11;
+                anioVisual--;
+            }
+            sincronizarSelectorConVista();
+            diaSeleccionado = 1;
+            cargarDatosMes();
+        }
+
+        function obtenerClaveMes() {
+            return `mon_data_${anioVisual}-${mesVisual}`;
+        }
+
+        let datosMes = {};
+        let ahorrosGlobal = parseFloat(localStorage.getItem('mon_ahorros_global')) || 0.0;
+        let eventosGlobal = JSON.parse(localStorage.getItem('mon_eventos_global')) || [];
+
+        function cargarDatosMes() {
+            try {
+                let claveActual = obtenerClaveMes();
+                let guardado = localStorage.getItem(claveActual);
+                if (guardado) {
+                    datosMes = JSON.parse(guardado);
+                } else {
+                    datosMes = {
+                        ingresos: 0.0,
+                        gastos: 0.0,
+                        presupuesto: 0.0,
+                        metaAhorro: 0.0,
+                        ahorrosDepositadosMes: 0.0,
+                        historial: [],
+                        categorias: {
+                            "🍔 Alimentación": 0.0,
+                            "🚗 Transporte": 0.0,
+                            "💡 Servicios": 0.0,
+                            "🎬 Entretenimiento": 0.0,
+                            "📦 Otros": 0.0
+                        }
+                    };
+                }
+                let titleEl = document.getElementById('calTitleMonth');
+                if(titleEl) titleEl.innerText = `${nombresMeses[mesVisual]} ${anioVisual}`;
+                actualizarUI();
+                inicializarGrafico();
+                verificarAlertas15Dias();
+                generarCalendario();
+                actualizarDetalleDia();
+            } catch(e) {
+                console.error("Error en cargarDatosMes:", e);
+            }
+        }
+
+        function guardarMes() {
+            localStorage.setItem(obtenerClaveMes(), JSON.stringify(datosMes));
+            localStorage.setItem('mon_ahorros_global', ahorrosGlobal);
+            localStorage.setItem('mon_eventos_global', JSON.stringify(eventosGlobal));
+            actualizarUI();
+            actualizarGrafico();
+            verificarAlertas15Dias();
+            generarCalendario();
+            actualizarDetalleDia();
+        }
+
+        function seleccionarDia(dia) {
+            diaSeleccionado = dia;
+            generarCalendario();
+            actualizarDetalleDia();
+            hablar(`Día ${dia} seleccionado.`);
+        }
+
+        function actualizarDetalleDia() {
+            if (!diaSeleccionado) return;
+            let titleEl = document.getElementById('lblDiaSeleccionadoTitulo');
+            if(titleEl) titleEl.innerText = `📌 Detalle del Día ${diaSeleccionado} de ${nombresMeses[mesVisual]} ${anioVisual}`;
+            
+            let html = "";
+            let transDia = (datosMes.historial || []).filter(h => parseInt(h.dia) === diaSeleccionado);
+            let eventosDia = (eventosGlobal || []).filter(e => e.anio === anioVisual && e.mes === mesVisual && parseInt(e.dia) === diaSeleccionado);
+
+            if (transDia.length === 0 && eventosDia.length === 0) {
+                html = "<div style='color: #888; font-weight:700;'>No hay registros ni eventos para este día.</div>";
+            } else {
+                transDia.forEach(t => {
+                    let color = t.tipo === 'Ingreso' ? '#00FF00' : (t.tipo === 'Ahorros' ? '#3498DB' : '#FF5555');
+                    html += `<div class='item-row'><span><b>[${t.tipo}]</b> ${t.desc} <i style="font-size:12px; color:#aaa;">(${t.hora || ''})</i></span> <span style='color: ${color}; font-weight: 900;'>S/. ${t.monto.toFixed(2)}</span></div>`;
+                });
+                eventosDia.forEach(e => {
+                    html += `<div class='item-row'><span>📅 <b>[Evento]</b> ${e.desc} <i style="font-size:12px; color:#aaa;">(${e.hora || '12:00'})</i></span> <span style='color: #FFFF00; font-weight: 900;'>S/. ${e.monto.toFixed(2)}</span></div>`;
+                });
+            }
+            let listEl = document.getElementById('listaDetalleDia');
+            if(listEl) listEl.innerHTML = html;
+        }
+
+        function verificarAlertas15Dias() {
+            let banner = document.getElementById('alertBanner');
+            let badge = document.getElementById('cornerBadge');
+            let hoy = new Date();
+
+            if (datosMes.presupuesto > 0 && datosMes.gastos > datosMes.presupuesto) {
+                if(badge) {
+                    badge.className = "corner-badge exceeded";
+                    badge.innerText = "🔴 Límite Superado";
+                }
+            } else {
+                if(badge) {
+                    badge.className = "corner-badge";
+                    badge.innerText = "🟢 En Límite";
+                }
+            }
+
+            let alertasActivas = [];
+            (eventosGlobal || []).forEach(ev => {
+                let fechaEvento = new Date(ev.anio, ev.mes, parseInt(ev.dia));
+                let diferenciaTiempo = fechaEvento - hoy;
+                let diasRestantes = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
+                let avisoDias = ev.avisoDias !== undefined ? ev.avisoDias : 15;
+
+                if (diasRestantes === 0) {
+                    alertasActivas.push(`🚨 <b>¡HOY VENCE (${ev.hora || 'Todo el día'})!</b> "${ev.desc}" - S/. ${ev.monto}`);
+                } else if (diasRestantes > 0 && diasRestantes <= avisoDias) {
+                    alertasActivas.push(`⏳ Vence en ${diasRestantes} días (Día ${ev.dia}): "${ev.desc}" - S/. ${ev.monto}`);
+                }
+            });
+
+            if(banner) {
+                if (alertasActivas.length > 0) {
+                    banner.style.display = 'block';
+                    banner.innerHTML = alertasActivas.join("<br>");
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+        }
+
+        function hablar(texto) {
+            if ('speechSynthesis' in window) {
+                try {
+                    window.speechSynthesis.cancel();
+                    let utterance = new SpeechSynthesisUtterance(texto);
+                    utterance.lang = 'es-PE';
+                    utterance.rate = 1.0;
+                    window.speechSynthesis.speak(utterance);
+                } catch(e) {
+                    console.error("Error al hablar:", e);
+                }
+            }
+        }
+
+        function actualizarUI() {
+            let ahorrosMes = datosMes.ahorrosDepositadosMes || 0;
+            let saldoDisponible = (datosMes.ingresos || 0) - (datosMes.gastos || 0) - ahorrosMes;
+            
+            let balEl = document.getElementById('lblBalance');
+            if(balEl) balEl.innerText = `S/. ${saldoDisponible.toFixed(2)}`;
+            
+            let extEl = document.getElementById('lblExtras');
+            if(extEl) extEl.innerText = `Presupuesto: S/. ${(datosMes.presupuesto || 0).toFixed(2)} | Ahorros Bloqueados: S/. ${(ahorrosGlobal || 0).toFixed(2)} | Meta: S/. ${(datosMes.metaAhorro || 0).toFixed(2)}`;
+
+            let htmlCat = "";
+            let cats = datosMes.categorias || {};
+            for (let cat of Object.keys(cats)) {
+                let monto = cats[cat];
+                htmlCat += `<div class='item-row'><span>${cat}</span> <span style='color: #FF5555; font-weight: 900;'>S/. ${monto.toFixed(2)}</span></div>`;
+            }
+            let catEl = document.getElementById('listaCategoriasDesglose');
+            if(catEl) catEl.innerHTML = htmlCat;
+
+            let htmlHist = "";
+            let hist = datosMes.historial || [];
+            if (hist.length === 0) {
+                htmlHist = "<div style='color: #888;'>Sin movimientos este mes.</div>";
+            } else {
+                for (let i = hist.length - 1; i >= 0; i--) {
+                    let h = hist[i];
+                    let color = h.tipo === 'Ingreso' ? '#00FF00' : (h.tipo === 'Ahorros' ? '#3498DB' : '#FF5555');
+                    htmlHist += `<div class='item-row'><span><b>[${h.tipo}]</b> ${h.desc} <i style="font-size:12px; color:#aaa;">(Día ${h.dia} - ${h.hora || ''})</i></span> <span style='color: ${color}; font-weight: 900;'>S/. ${h.monto.toFixed(2)}</span></div>`;
+                }
+            }
+            let histEl = document.getElementById('listaHistorial');
+            if(histEl) histEl.innerHTML = htmlHist;
+
+            let eventosMesActual = (eventosGlobal || []).filter(e => e.anio === anioVisual && e.mes === mesVisual);
+            let htmlEv = "";
+            if (eventosMesActual.length === 0) {
+                htmlEv = "<div style='color: #888;'>No hay eventos programados para este mes.</div>";
+            } else {
+                for (let e of eventosMesActual) {
+                    htmlEv += `<div class='item-row'><span>📅 <b>Día ${e.dia} (${e.hora || '12:00'}):</b> ${e.desc}</span> <span style='color: #FFFF00; font-weight: 900;'>S/. ${e.monto.toFixed(2)}</span></div>`;
+                }
+            }
+            let evEl = document.getElementById('listaEventos');
+            if(evEl) evEl.innerHTML = htmlEv;
+        }
+
+        function generarCalendario() {
+            const calContainer = document.getElementById('calendarioContainer');
+            if(!calContainer) return;
+            calContainer.innerHTML = "";
+            let diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+            diasSemana.forEach(d => {
+                calContainer.innerHTML += `<div class='cal-day-header'>${d}</div>`;
+            });
+
+            let eventosMes = (eventosGlobal || []).filter(e => e.anio === anioVisual && e.mes === mesVisual);
+            let totalDias = new Date(anioVisual, mesVisual + 1, 0).getDate();
+
+            for (let i = 1; i <= totalDias; i++) {
+                let tieneEvento = eventosMes.some(e => parseInt(e.dia) === i);
+                let tieneTransaccion = (datosMes.historial || []).some(h => parseInt(h.dia) === i);
+
+                let clase = '';
+                if (i === diaSeleccionado) clase += ' selected';
+                if (tieneEvento) clase += ' has-event';
+                if (tieneTransaccion) clase += ' has-trans';
+
+                let indicadoresHtml = "";
+                if (tieneTransaccion) indicadoresHtml += `<div class='cal-dot' title='Transacción'></div>`;
+                if (tieneEvento) indicadoresHtml += `<div class='cal-dot cal-dot-event' title='Evento'></div>`;
+
+                calContainer.innerHTML += `<div class='cal-day ${clase}' onclick="seleccionarDia(${i})"><span style='font-size:12px; color:#fff; font-weight:900;'>${i}</span>${indicadoresHtml}</div>`;
+            }
+        }
+
+        let chartInstance = null;
+        let modoGraficoBarra = false;
+
+        function inicializarGrafico() {
+            try {
+                if (typeof Chart === 'undefined') return;
+                const ctx = document.getElementById('mainChart');
+                if(!ctx) return;
+                crearGrafico(ctx.getContext('2d'));
+            } catch(e) {
+                console.error("Error inicializando gráfico:", e);
+            }
+        }
+
+        function crearGrafico(ctx) {
+            if (typeof Chart === 'undefined') return;
+            if (chartInstance) chartInstance.destroy();
+            
+            let ahorrosMes = datosMes.ahorrosDepositadosMes || 0;
+            let saldoDisponible = Math.max(0, (datosMes.ingresos || 0) - (datosMes.gastos || 0) - ahorrosMes);
+            let gastosTotales = datosMes.gastos || 0;
+            let ahorrosBloqueados = ahorrosGlobal || 0;
+
+            let labels = ["🟢 Saldo Disponible", "🔴 Gastos del Mes", "💰 Ahorros Bloqueados"];
+            let dataValues = [saldoDisponible, gastosTotales, ahorrosBloqueados];
+            let colores = ['#00FF00', '#FF5555', '#3498DB'];
+
+            if (!modoGraficoBarra) {
+                let centerTxt = document.getElementById('centerText');
+                if(centerTxt) centerTxt.style.display = 'block';
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: dataValues, backgroundColor: colores, borderWidth: 2, borderColor: '#0d1117' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '65%' }
+                });
+            } else {
+                let centerTxt = document.getElementById('centerText');
+                if(centerTxt) centerTxt.style.display = 'none';
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ label: 'Monto (S/.)', data: dataValues, backgroundColor: colores, borderWidth: 1 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: 'white', font: {weight:'bold'} } }, x: { ticks: { color: 'white', font: { size: 9, weight:'bold' } } } } }
+                });
+            }
+        }
+
+        function alternarTipoGrafico() {
+            modoGraficoBarra = !modoGraficoBarra;
+            let btn = document.querySelector('.btn-toggle-chart');
+            if(btn) btn.innerText = modoGraficoBarra ? "🍩 Gráfico Circular" : "📊 Gráfico de Barras";
+            let ctx = document.getElementById('mainChart');
+            if(ctx) crearGrafico(ctx.getContext('2d'));
+        }
+
+        function actualizarGrafico() {
+            if (chartInstance) {
+                let ahorrosMes = datosMes.ahorrosDepositadosMes || 0;
+                let saldoDisponible = Math.max(0, (datosMes.ingresos || 0) - (datosMes.gastos || 0) - ahorrosMes);
+                chartInstance.data.datasets[0].data = [saldoDisponible, datosMes.gastos || 0, ahorrosGlobal || 0];
+                chartInstance.update();
+            }
+        }
+
+        // --- FUNCIONES DE LECTURA POR VOZ ESPECÍFICAS ---
+        function leerIngresosDelMes() {
+            let ingresos = (datosMes.historial || []).filter(h => h.tipo === 'Ingreso');
+            if (ingresos.length === 0) {
+                hablar(`No hay ingresos registrados en ${nombresMeses[mesVisual]}.`);
+                return;
+            }
+            let texto = `Ingresos del mes de ${nombresMeses[mesVisual]}: Total ${(datosMes.ingresos || 0).toFixed(2)} soles. Detalle: `;
+            ingresos.forEach(i => {
+                texto += `${i.monto.toFixed(2)} soles por ${i.desc}, el día ${i.dia} a las ${i.hora || '12:00'}. `;
+            });
+            hablar(texto);
+        }
+
+        function leerGastosDelMes() {
+            let gastos = (datosMes.historial || []).filter(h => h.tipo === 'Gasto');
+            if (gastos.length === 0) {
+                hablar(`No hay gastos registrados en ${nombresMeses[mesVisual]}.`);
+                return;
+            }
+            let texto = `Gastos del mes de ${nombresMeses[mesVisual]}: Total ${(datosMes.gastos || 0).toFixed(2)} soles. Detalle: `;
+            gastos.forEach(g => {
+                texto += `${g.monto.toFixed(2)} soles en ${g.desc}, el día ${g.dia} a las ${g.hora || '12:00'}. `;
+            });
+            hablar(texto);
+        }
+
+        function leerEstadoAhorros() {
+            let texto = `Estado de ahorros. Actualmente posee ${(ahorrosGlobal || 0).toFixed(2)} soles en ahorros bloqueados. La meta de ahorro establecida es de ${(datosMes.metaAhorro || 0).toFixed(2)} soles. `;
+            let movimientosAhorros = (datosMes.historial || []).filter(h => h.tipo === 'Ahorros');
+            if (movimientosAhorros.length > 0) {
+                texto += "Movimientos de ahorros este mes: ";
+                movimientosAhorros.forEach(m => {
+                    texto += `${m.desc} de ${m.monto.toFixed(2)} soles, el día ${m.dia} de ${nombresMeses[mesVisual]} a las ${m.hora || '12:00'}. `;
+                });
+            } else {
+                texto += "No hay movimientos de ahorros registrados este mes.";
+            }
+            hablar(texto);
+        }
+
+        // --- VOZ INTELIGENTE CON PROTECCIÓN ANTI-BLOQUEO ---
+        function iniciarReconocimientoVoz() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Navegador sin soporte de voz.");
+                return;
+            }
+
+            try {
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'es-PE';
+                let statusEl = document.getElementById('lblVoiceStatus');
+                if(statusEl) statusEl.innerText = "🎤 Escuchando orden...";
+                hablar("Escuchando comando.");
+
+                recognition.onresult = function(event) {
+                    let texto = event.results[0][0].transcript.toLowerCase();
+                    if(statusEl) statusEl.innerText = `Voz: "${texto}"`;
+                    procesarComandoVoz(texto);
+                };
+
+                recognition.onerror = function() {
+                    if(statusEl) statusEl.innerText = "⚠️ No se entendió el audio.";
+                    hablar("No se reconoció el audio.");
+                };
+
+                recognition.start();
+            } catch(e) {
+                console.error("Error en reconocimiento de voz:", e);
+            }
+        }
+
+        function procesarComandoVoz(texto) {
+            let numeros = texto.match(/\d+(\.\d+)?/g);
+            let monto = numeros ? parseFloat(numeros[0]) : 0;
+            let horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let diaActual = diaSeleccionado || new Date().getDate();
+
+            if (texto.includes("meta de ahorro") || (texto.includes("meta") && texto.includes("ahorro")) || (texto.includes("meta") && !texto.includes("depositar") && !texto.includes("retirar"))) {
+                datosMes.metaAhorro = monto;
+                guardarMes();
+                hablar(`Meta de ahorro establecida en ${monto} soles.`);
+                return;
+            }
+            if (texto.includes("depositar") && texto.includes("ahorro")) {
+                ahorrosGlobal += monto;
+                datosMes.ahorrosDepositadosMes = (datosMes.ahorrosDepositadosMes || 0) + monto;
+                datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Depósito a ahorros', hora: horaActual, dia: diaActual });
+                guardarMes();
+                hablar(`Se depositaron ${monto} soles a ahorros y se descontaron de su saldo.`);
+                return;
+            }
+            if (texto.includes("retirar") && texto.includes("ahorro")) {
+                if (ahorrosGlobal >= monto) {
+                    ahorrosGlobal -= monto;
+                    datosMes.ahorrosDepositadosMes = Math.max(0, (datosMes.ahorrosDepositadosMes || 0) - monto);
+                    datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Retiro de ahorros', hora: horaActual, dia: diaActual });
+                    guardarMes();
+                    hablar(`Se retiraron ${monto} soles de ahorros y regresaron a su saldo.`);
+                } else {
+                    hablar("Fondos insuficientes en ahorros.");
+                }
+                return;
+            }
+            if (texto.includes("pagar") || texto.includes("programar") || texto.includes("evento")) {
+                let diaNum = numeros && numeros.length > 1 ? parseInt(numeros[1]) : diaActual;
+                let desc = texto.replace(/\d+/g, "").replace(/soles|el|de|del|pagar|programar/g, "").trim();
+                if (!desc) desc = "Pago programado";
+
+                eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: diaNum, hora: horaActual, desc: desc, monto: monto, avisoDias: 15 });
+                guardarMes();
+                hablar(`Evento programado para el día ${diaNum}.`);
+                return;
+            }
+            if (texto.includes("presupuesto")) {
+                datosMes.presupuesto = monto;
+                guardarMes();
+                hablar(`Presupuesto establecido en ${monto} soles.`);
+                return;
+            }
+            if (texto.includes("gasto") || texto.includes("gasté")) {
+                let catKey = "📦 Otros";
+                if (texto.match(/aliment|comida|mercado|almuerzo|cena|desayuno|pan|fruta/)) catKey = "🍔 Alimentación";
+                else if (texto.match(/transporte|pasaje|combustible|gasolina|taxi|uber|colectivo/)) catKey = "🚗 Transporte";
+                else if (texto.match(/servicio|luz|agua|internet|gas|telefono/)) catKey = "💡 Servicios";
+                else if (texto.match(/entretenimiento|juego|juegos|cine|streaming|netflix|spotify|diversion|fiesta/)) catKey = "🎬 Entretenimiento";
+
+                let descGasto = catKey;
+                let palabras = texto.replace(/gasto|gasté|soles|\d+/g, "").trim();
+                if (palabras.length > 2) {
+                    descGasto = `${catKey} (${palabras.charAt(0).toUpperCase() + palabras.slice(1)})`;
+                }
+
+                datosMes.gastos = (datosMes.gastos || 0) + monto;
+                datosMes.categorias[catKey] = (datosMes.categorias[catKey] || 0) + monto;
+                datosMes.historial.push({ tipo: 'Gasto', monto: monto, desc: descGasto, hora: horaActual, dia: diaActual });
+                guardarMes();
+                hablar(`Gasto de ${monto} soles registrado en ${catKey}.`);
+                return;
+            }
+            if (texto.includes("ingreso") || texto.includes("ingresó")) {
+                let descIngreso = "💵 Ingreso";
+                let palabras = texto.replace(/ingreso|ingresó|soles|\d+/g, "").trim();
+                if (palabras.length > 2) {
+                    descIngreso = `💵 Ingreso (${palabras.charAt(0).toUpperCase() + palabras.slice(1)})`;
+                }
+
+                datosMes.ingresos = (datosMes.ingresos || 0) + monto;
+                datosMes.historial.push({ tipo: 'Ingreso', monto: monto, desc: descIngreso, hora: horaActual, dia: diaActual });
+                guardarMes();
+                hablar(`Ingreso registrado de ${monto} soles.`);
+                return;
+            }
+
+            hablar("No entendí la orden. Intente decir 'gasto 200 streaming' o 'meta de ahorro 500'.");
+        }
+
+        // --- ACCIONES MANUALES ---
+        function registrarIngresoManual() {
+            try {
+                let m = parseFloat(prompt("Monto del ingreso (S/.):"));
+                let desc = prompt("Descripción del ingreso (ej. Sueldo, Venta):", "Sueldo") || "Ingreso";
+                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
+                if (!isNaN(m) && m > 0) {
+                    datosMes.ingresos = (datosMes.ingresos || 0) + m;
+                    datosMes.historial.push({ tipo: 'Ingreso', monto: m, desc: `💵 ${desc}`, hora: h, dia: d });
+                    guardarMes();
+                    hablar(`Ingreso registrado.`);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function registrarGastoManual() {
+            try {
+                let m = parseFloat(prompt("Monto del gasto (S/.):"));
+                let descEspecifica = prompt("Detalle del gasto (ej. Streaming, Cine):", "Streaming") || "Gasto";
+                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
+                let keys = Object.keys(datosMes.categorias);
+                let opc = prompt("Elija categoría:\n1. 🍔 Alimentación\n2. 🚗 Transporte\n3. 💡 Servicios\n4. 🎬 Entretenimiento\n5. 📦 Otros", "4");
+                let catKey = keys[parseInt(opc) - 1] || "📦 Otros";
+
+                if (!isNaN(m) && m > 0) {
+                    datosMes.gastos = (datosMes.gastos || 0) + m;
+                    datosMes.categorias[catKey] = (datosMes.categorias[catKey] || 0) + m;
+                    datosMes.historial.push({ tipo: 'Gasto', monto: m, desc: `${catKey} (${descEspecifica})`, hora: h, dia: d });
+                    guardarMes();
+                    hablar(`Gasto registrado.`);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function gestionarAhorros() {
+            try {
+                let accion = prompt("¿Qué desea hacer?\n1. Depositar a ahorros (Descuenta de tu saldo)\n2. Retirar de ahorros (Regresa a tu saldo)", "1");
+                let m = parseFloat(prompt("Monto (S/.):"));
+                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
+
+                if (!isNaN(m) && m > 0) {
+                    if (accion === "1") {
+                        ahorrosGlobal += m;
+                        datosMes.ahorrosDepositadosMes = (datosMes.ahorrosDepositadosMes || 0) + m;
+                        datosMes.historial.push({ tipo: 'Ahorros', monto: m, desc: 'Depósito ahorros', hora: h, dia: d });
+                        hablar(`Se depositaron ${m} soles a ahorros.`);
+                    } else if (accion === "2" && ahorrosGlobal >= m) {
+                        ahorrosGlobal -= m;
+                        datosMes.ahorrosDepositadosMes = Math.max(0, (datosMes.ahorrosDepositadosMes || 0) - m);
+                        datosMes.historial.push({ tipo: 'Ahorros', monto: m, desc: 'Retiro ahorros', hora: h, dia: d });
+                        hablar(`Se retiraron ${m} soles de ahorros.`);
+                    } else {
+                        alert("Fondos insuficientes en ahorros.");
+                    }
+                    guardarMes();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function programarEventoManual() {
+            try {
+                let desc = prompt("Descripción del pago o evento:", "Pagar luz");
+                let dia = parseInt(prompt("Día del mes:", diaSeleccionado)) || diaSeleccionado;
+                let h = prompt("Hora:", "10:00") || "10:00";
+                let monto = parseFloat(prompt("Monto (S/.):", "1500")) || 0;
+                let avisoDias = parseInt(prompt("Días de anticipación para avisos (Predeterminado 15):", "15")) || 15;
+
+                if (desc && !isNaN(monto)) {
+                    eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: dia, hora: h, desc: desc, monto: monto, avisoDias: avisoDias });
+                    guardarMes();
+                    hablar(`Evento programado.`);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function configurarPresupuesto() {
+            try {
+                let m = parseFloat(prompt("Ingrese presupuesto límite para este mes (S/.):"));
+                if (!isNaN(m)) { datosMes.presupuesto = m; guardarMes(); hablar("Presupuesto actualizado."); }
+            } catch(e) { console.error(e); }
+        }
+
+        function configurarMeta() {
+            try {
+                let m = parseFloat(prompt("Ingrese meta de ahorro (S/.):"));
+                if (!isNaN(m)) { datosMes.metaAhorro = m; guardarMes(); hablar("Meta de ahorro actualizada."); }
+            } catch(e) { console.error(e); }
+        }
+
+        function borrarDatosMes() {
+            if (confirm("¿Limpiar todos los registros de este mes seleccionado?")) {
+                localStorage.removeItem(obtenerClaveMes());
+                cargarDatosMes();
+                hablar("Mes reiniciado.");
+            }
+        }
+    </script>
+</body>
+</html>

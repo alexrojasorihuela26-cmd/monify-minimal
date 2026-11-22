@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <link rel="manifest" href="manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monify Minimal - Gestión Financiera Inteligente</title>
+    <title>MoniGo - Gestión Financiera Inteligente</title>
     <!-- Chart.js con respaldo de seguridad local/online -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             background-color: #000000;
             color: #FFFFFF;
@@ -25,7 +28,7 @@
             background-color: #0d1117;
             border: 4px solid #00FF00;
             border-radius: 20px;
-            padding: 20px;
+            padding: 18px;
             box-shadow: 0 10px 30px rgba(0,255,0,0.2);
             display: flex;
             flex-direction: column;
@@ -33,18 +36,29 @@
             position: relative;
         }
 
-        /* Indicador en Esquina */
+        /* Cabecera superior con botón de límite ajustable */
+        .top-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+        }
         .corner-badge {
-            position: absolute;
-            top: 20px;
-            right: 20px;
             background-color: #008800;
             color: #FFFFFF;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 900;
-            padding: 5px 12px;
+            padding: 6px 12px;
             border-radius: 20px;
             border: 2px solid #FFFFFF;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+        .corner-badge:active {
+            transform: scale(0.96);
         }
         .corner-badge.exceeded {
             background-color: #CC0000;
@@ -69,15 +83,16 @@
             color: #FFFF00;
             font-size: 26px;
             font-weight: 900;
-            text-align: center;
-            margin-bottom: 2px;
+            text-align: left;
+            margin: 0;
         }
         .header-subtitle {
             color: #FFFFFF;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            margin-bottom: 15px;
+            margin-bottom: 14px;
             text-align: center;
+            width: 100%;
         }
 
         /* Banner de Alertas */
@@ -90,10 +105,26 @@
             width: 100%;
             margin-bottom: 15px;
             text-align: center;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 900;
             display: none;
             line-height: 1.4;
+        }
+
+        /* Aviso de fecha distinta al día actual */
+        .date-warning-box {
+            background-color: #2b2100;
+            border: 2px solid #FFFF00;
+            color: #FFFF00;
+            padding: 10px 12px;
+            border-radius: 10px;
+            width: 100%;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 900;
+            display: none;
+            line-height: 1.35;
         }
 
         /* Tarjeta de Gráficos y Saldo */
@@ -125,7 +156,7 @@
         .balance-value { font-size: 24px; font-weight: 900; color: #00FF00; }
 
         .info-extras {
-            font-size: 14px;
+            font-size: 13px;
             color: #FFFFFF;
             font-weight: 700;
             margin-top: 12px;
@@ -134,7 +165,7 @@
             border-radius: 8px;
             border: 2px solid #FFFF00;
             text-align: center;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
         .btn-toggle-chart {
@@ -160,24 +191,30 @@
             width: 100%;
             text-align: center;
             font-weight: 900;
-            font-size: 16px;
+            font-size: 15px;
             margin-bottom: 15px;
+            line-height: 1.35;
+        }
+        .voice-box.error-state {
+            background-color: #2b0909;
+            border-color: #FF5555;
+            color: #FF8888;
         }
 
-        /* Botones de Acción */
+        /* Botones de Acción Principales */
         .action-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         button {
             border: 3px solid #FFFFFF;
             border-radius: 12px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 900;
-            padding: 14px;
+            padding: 13px 10px;
             cursor: pointer;
             transition: 0.1s;
         }
@@ -187,34 +224,127 @@
         .btn-presupuesto { background-color: #D35400; color: #FFFFFF; border-color: #FFA500; }
         .btn-meta { background-color: #8E44AD; color: #FFFFFF; border-color: #DA70D6; }
         .btn-ahorros { background-color: #2980B9; color: #FFFFFF; border-color: #00BFFF; }
-        .btn-evento { background-color: #16A085; color: #FFFFFF; border-color: #20B2AA; }
+        .btn-pago { background-color: #16A085; color: #FFFFFF; border-color: #20B2AA; }
+        .btn-evento { background-color: #6C3483; color: #FFFFFF; border-color: #C084FC; }
         .btn-voz { background-color: #008B8B; color: #FFFFFF; grid-column: span 2; font-size: 18px; border-color: #00FFFF; }
-        
+
         .btn-leer-ingresos { background-color: #1E8449; color: #FFFFFF; border-color: #2ECC71; }
         .btn-leer-gastos { background-color: #B03A2E; color: #FFFFFF; border-color: #E74C3C; }
+        .btn-leer-dia { background-color: #0b3333; color: #00FFFF; border-color: #00FFFF; }
+        .btn-leer-mes { background-color: #2c1f0b; color: #FFD700; border-color: #FFA500; }
         .btn-leer-ahorros { background-color: #2471A3; color: #FFFFFF; border-color: #5499C7; grid-column: span 2; }
-        
         .btn-borrar { background-color: #2C3E50; color: #FF6B6B; grid-column: span 2; font-size: 14px; padding: 10px; border: 2px dashed #FF6B6B; }
 
-        /* Contenedores */
+        /* Menús Desplegables de Acciones */
+        .action-menu-details {
+            width: 100%;
+            background-color: #161b22;
+            border: 2px solid #444444;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .action-menu-summary {
+            color: #FFFF00;
+            font-size: 15px;
+            font-weight: 900;
+            padding: 12px 14px;
+            cursor: pointer;
+            background-color: #1a2332;
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        .action-menu-summary::-webkit-details-marker {
+            display: none;
+        }
+        .action-menu-summary::after {
+            content: "▼";
+            font-size: 13px;
+            color: #00FFFF;
+            transition: transform 0.2s ease;
+        }
+        .action-menu-details[open] .action-menu-summary::after {
+            transform: rotate(180deg);
+        }
+        .action-menu-body {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            background-color: #0d1117;
+        }
+
+        /* Contenedores Genéricos */
         .section-box {
             background-color: #161b22;
             border: 2px solid #444444;
             border-radius: 12px;
             padding: 12px;
             width: 100%;
-            max-height: 180px;
-            overflow-y: auto;
             text-align: left;
             font-size: 15px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
         .item-row {
             border-bottom: 1px solid #333333;
             padding: 8px 0;
             display: flex;
             justify-content: space-between;
+            gap: 8px;
+        }
+
+        /* Estilo Sistema de Pestañas (Tabs) */
+        .tabs-container {
+            width: 100%;
+            background-color: #161b22;
+            border: 3px solid #00FF00;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        .tabs-header {
+            display: flex;
+            background-color: #1a2332;
+            border-bottom: 2px solid #00FF00;
+        }
+        .tab-btn {
+            flex: 1;
+            background-color: transparent;
+            color: #AAAAAA;
+            border: none;
+            border-radius: 0;
+            padding: 12px 6px;
+            font-size: 14px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: 0.2s;
+            text-align: center;
+        }
+        .tab-btn:hover {
+            color: #FFFFFF;
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+        .tab-btn.active {
+            color: #00FF00;
+            background-color: #0d1117;
+            border-bottom: 4px solid #00FF00;
+        }
+        .tab-content {
+            display: none;
+            padding: 12px;
+            background-color: #0d1117;
+            max-height: 220px;
+            overflow-y: auto;
+            text-align: left;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .tab-content.active-tab {
+            display: block;
         }
 
         /* Estilo Calendario Interactivo */
@@ -228,7 +358,7 @@
             background-color: #21262d;
             color: #FFFF00;
             border: 2px solid #FFFF00;
-            padding: 5px 12px;
+            padding: 6px 12px;
             border-radius: 6px;
             font-size: 14px;
             font-weight: 900;
@@ -246,13 +376,13 @@
             text-align: center;
             font-size: 13px;
         }
-        .cal-day-header { font-weight: 900; color: #FFFF00; padding: 3px; }
+        .cal-day-header { font-weight: 900; color: #FFFF00; padding: 4px 2px; }
         .cal-day {
             background-color: #0d1117;
             border: 2px solid #333333;
             padding: 6px 2px;
             border-radius: 6px;
-            min-height: 45px;
+            min-height: 44px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -261,27 +391,42 @@
             transition: 0.2s;
         }
         .cal-day:hover { border-color: #00FF00; background-color: #112211; }
-        .cal-day.selected { border-color: #00FFFF; background-color: #0b3333; }
-        .cal-day.has-event { border-color: #FFA500; background-color: #2c1f0b; }
         .cal-day.has-trans { border-color: #00FF00; background-color: #0b220b; }
+        .cal-day.has-event { border-color: #C084FC; background-color: #241038; }
+        .cal-day.selected { border-color: #00FFFF; background-color: #0b3333; box-shadow: inset 0 0 6px rgba(0,255,255,0.35); }
+        .cal-dots-row {
+            display: flex;
+            gap: 3px;
+            margin-top: 3px;
+            align-items: center;
+            justify-content: center;
+        }
         .cal-dot {
             width: 6px;
             height: 6px;
             background-color: #00FF00;
             border-radius: 50%;
-            margin-top: 3px;
         }
-        .cal-dot-event { background-color: #FFA500; }
+        .cal-dot-event { background-color: #C084FC; }
+        .cal-legend {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #CCCCCC;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
-        <!-- Indicador esquina -->
-        <div id="cornerBadge" class="corner-badge">🟢 En Límite</div>
-
-        <!-- Título -->
-        <div class="header-title">Monify Minimal</div>
+        <!-- Cabecera superior con botón ajustable de límite -->
+        <div class="top-header">
+            <h1 class="header-title">MoniGo</h1>
+            <button type="button" id="cornerBadge" class="corner-badge" onclick="configurarPresupuesto()" title="Toca para ajustar el límite">🟢 En Límite</button>
+        </div>
         <div class="header-subtitle">Gestión Financiera, Ahorros y Calendario Interactivo</div>
 
         <!-- Selector General de Año/Mes -->
@@ -316,64 +461,99 @@
             </div>
             <button class="btn-toggle-chart" onclick="alternarTipoGrafico()">📊 Gráfico de Barras</button>
             <div id="lblExtras" class="info-extras">
-                Presupuesto: S/. 0.00 | Ahorros Bloqueados: S/. 0.00 | Meta: S/. 0.00
+                Presupuesto: S/. 500.00 | Gastos: S/. 0.00 | Ahorros Bloqueados: S/. 0.00 | Meta: S/. 0.00
             </div>
         </div>
 
         <!-- Estado de Voz -->
         <div id="lblVoiceStatus" class="voice-box">
-            🎤 Asistente listo. Ej: "Gasto 200 streaming", "Meta de ahorro 1000", "Depositar 200 a ahorros".
+            🎤 Asistente listo. Ej: "Pagar 1500 soles de luz el 30 de diciembre" o "Gasto 50 almuerzo".
         </div>
 
-        <!-- Botones de Acción -->
+        <!-- Botones Principales -->
         <div class="action-buttons">
             <button class="btn-voz" onclick="iniciarReconocimientoVoz()">🎤 Dictar Comando por Voz</button>
             <button class="btn-ingreso" onclick="registrarIngresoManual()">+ Ingreso</button>
             <button class="btn-gasto" onclick="registrarGastoManual()">- Gasto</button>
-            <button class="btn-ahorros" onclick="gestionarAhorros()">💰 Ahorros</button>
-            <button class="btn-evento" onclick="programarEventoManual()">📅 Programar Evento</button>
-            <button class="btn-presupuesto" onclick="configurarPresupuesto()">Presupuesto</button>
-            <button class="btn-meta" onclick="configurarMeta()">Meta Ahorro</button>
-            
-            <button class="btn-leer-ingresos" onclick="leerIngresosDelMes()">🔊 Leer Ingresos del Mes</button>
-            <button class="btn-leer-gastos" onclick="leerGastosDelMes()">🔊 Leer Gastos del Mes</button>
-            <button class="btn-leer-ahorros" onclick="leerEstadoAhorros()">🔊 Leer Estado Ahorros</button>
-            
-            <button class="btn-borrar" onclick="borrarDatosMes()">Limpiar Mes Seleccionado</button>
+            <button class="btn-ahorros" onclick="gestionarAhorros()" style="grid-column: span 2;">💰 Ahorros</button>
         </div>
 
+        <!-- Menú Desplegable 1: Programar Pago y Programar Evento -->
+        <details class="action-menu-details">
+            <summary class="action-menu-summary">📅 Programar Pagos y Eventos</summary>
+            <div class="action-menu-body">
+                <button class="btn-pago" onclick="programarPagoManual()">💳 Programar Pago</button>
+                <button class="btn-evento" onclick="programarEventoSoloManual()">📅 Programar Evento</button>
+            </div>
+        </details>
+
+        <!-- Menú Desplegable 2: Lectura por Voz -->
+        <details class="action-menu-details">
+            <summary class="action-menu-summary">🔊 Escuchar Resúmenes y Estados</summary>
+            <div class="action-menu-body">
+                <button class="btn-leer-dia" onclick="leerResumenDelDia()">🔊 Resumen del Día</button>
+                <button class="btn-leer-mes" onclick="leerEstadoDelMes()">🔊 Estado del Mes</button>
+                <button class="btn-leer-ingresos" onclick="leerIngresosDelMes()">🔊 Leer Ingresos</button>
+                <button class="btn-leer-gastos" onclick="leerGastosDelMes()">🔊 Leer Gastos</button>
+                <button class="btn-leer-ahorros" onclick="leerEstadoAhorros()">🔊 Leer Estado Ahorros</button>
+            </div>
+        </details>
+
+        <!-- Menú Desplegable 3: Presupuesto, Meta y Limpieza -->
+        <details class="action-menu-details">
+            <summary class="action-menu-summary">⚙️ Presupuesto, Meta y Limpieza</summary>
+            <div class="action-menu-body">
+                <button class="btn-presupuesto" onclick="configurarPresupuesto()">Presupuesto</button>
+                <button class="btn-meta" onclick="configurarMeta()">Meta Ahorro</button>
+                <button class="btn-borrar" onclick="borrarDatosMes()">Limpiar Mes Seleccionado</button>
+            </div>
+        </details>
+
         <!-- Calendario Interactivo -->
-        <div class="section-box" style="max-height: 250px;">
+        <div class="section-box">
+            <div id="avisoFechaCalendario" class="date-warning-box"></div>
             <div class="cal-header-nav">
                 <button class="cal-nav-btn" onclick="navegarCalendario(-1)">◀ Mes Ant.</button>
                 <div id="calTitleMonth" class="cal-title-month">Diciembre 2026</div>
                 <button class="cal-nav-btn" onclick="navegarCalendario(1)">Mes Sig. ▶</button>
             </div>
             <div id="calendarioContainer" class="calendar-grid"></div>
+            <div class="cal-legend">
+                <span>🟢 Transacción</span>
+                <span>🟣 Evento / Pago</span>
+                <span>🔵 Día Seleccionado</span>
+            </div>
         </div>
 
         <!-- Detalle del Día Seleccionado -->
-        <div class="section-box" style="border-color: #00FFFF; background-color: #051919;">
+        <div class="section-box" style="border-color: #00FFFF; background-color: #051919; max-height: 200px; overflow-y: auto;">
+            <div id="avisoFechaDetalle" class="date-warning-box" style="margin-bottom: 8px;"></div>
             <strong id="lblDiaSeleccionadoTitulo" style="color: #00FFFF; font-size: 16px;">📌 Detalle del Día: Seleccione un día</strong>
             <div id="listaDetalleDia" style="margin-top: 5px;"></div>
         </div>
 
-        <!-- Eventos / Pagos Programados -->
-        <div class="section-box">
-            <strong style="color: #FFFF00; font-size: 16px;">Pagos y Eventos Programados:</strong>
-            <div id="listaEventos" style="margin-top: 5px;"></div>
-        </div>
+        <!-- SISTEMA DE PESTAÑAS (TABS) -->
+        <div class="tabs-container">
+            <div class="tabs-header">
+                <button class="tab-btn active" onclick="cambiarTab('eventos', this)">📅 Eventos</button>
+                <button class="tab-btn" onclick="cambiarTab('gastos', this)">🍔 Gastos</button>
+                <button class="tab-btn" onclick="cambiarTab('historial', this)">📜 Historial</button>
+            </div>
 
-        <!-- Desglose por Categoría -->
-        <div class="section-box">
-            <strong style="color: #FFFF00; font-size: 16px;">Desglose de Gastos:</strong>
-            <div id="listaCategoriasDesglose" style="margin-top: 5px;"></div>
-        </div>
+            <div id="tab-eventos" class="tab-content active-tab">
+                <strong style="color: #FFFF00; font-size: 15px; display: block; margin-bottom: 6px;">Pagos y Eventos Programados:</strong>
+                <div id="listaEventos"></div>
+            </div>
 
-        <!-- Historial de Movimientos Mensual -->
-        <div class="section-box">
-            <strong style="color: #FFFF00; font-size: 16px;">Historial de Movimientos Mensual:</strong>
-            <div id="listaHistorial" style="margin-top: 5px;"></div>
+            <div id="tab-gastos" class="tab-content">
+                <strong style="color: #FFFF00; font-size: 15px; display: block; margin-bottom: 6px;">Desglose de Gastos:</strong>
+                <div id="listaCategoriasDesglose"></div>
+            </div>
+
+            <div id="tab-historial" class="tab-content">
+                <strong style="color: #FFFF00; font-size: 15px; display: block; margin-bottom: 6px;">Historial de Movimientos Mensual:</strong>
+                <div id="listaHistorial"></div>
+            </div>
         </div>
     </div>
 
@@ -396,6 +576,21 @@
                 console.error("Error al iniciar:", e);
             }
         });
+
+        function cambiarTab(nombreTab, elementoBtn) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active-tab'));
+
+            if (elementoBtn) elementoBtn.classList.add('active');
+
+            if (nombreTab === 'eventos') {
+                document.getElementById('tab-eventos').classList.add('active-tab');
+            } else if (nombreTab === 'gastos') {
+                document.getElementById('tab-gastos').classList.add('active-tab');
+            } else if (nombreTab === 'historial') {
+                document.getElementById('tab-historial').classList.add('active-tab');
+            }
+        }
 
         function sincronizarSelectorConVista() {
             let selector = document.getElementById('mesSelector');
@@ -436,8 +631,8 @@
             cargarDatosMes();
         }
 
-        function obtenerClaveMes() {
-            return `mon_data_${anioVisual}-${mesVisual}`;
+        function obtenerClaveMes(anio, mes) {
+            return `mon_data_${anio}-${mes}`;
         }
 
         let datosMes = {};
@@ -446,15 +641,18 @@
 
         function cargarDatosMes() {
             try {
-                let claveActual = obtenerClaveMes();
+                let claveActual = obtenerClaveMes(anioVisual, mesVisual);
                 let guardado = localStorage.getItem(claveActual);
                 if (guardado) {
                     datosMes = JSON.parse(guardado);
+                    if (datosMes.presupuesto === undefined || datosMes.presupuesto === null) {
+                        datosMes.presupuesto = 500.0;
+                    }
                 } else {
                     datosMes = {
                         ingresos: 0.0,
                         gastos: 0.0,
-                        presupuesto: 0.0,
+                        presupuesto: 500.0,
                         metaAhorro: 0.0,
                         ahorrosDepositadosMes: 0.0,
                         historial: [],
@@ -469,6 +667,7 @@
                 }
                 let titleEl = document.getElementById('calTitleMonth');
                 if(titleEl) titleEl.innerText = `${nombresMeses[mesVisual]} ${anioVisual}`;
+                actualizarAvisoFechaDiferente();
                 actualizarUI();
                 inicializarGrafico();
                 verificarAlertas15Dias();
@@ -480,9 +679,10 @@
         }
 
         function guardarMes() {
-            localStorage.setItem(obtenerClaveMes(), JSON.stringify(datosMes));
+            localStorage.setItem(obtenerClaveMes(anioVisual, mesVisual), JSON.stringify(datosMes));
             localStorage.setItem('mon_ahorros_global', ahorrosGlobal);
             localStorage.setItem('mon_eventos_global', JSON.stringify(eventosGlobal));
+            actualizarAvisoFechaDiferente();
             actualizarUI();
             actualizarGrafico();
             verificarAlertas15Dias();
@@ -490,8 +690,39 @@
             actualizarDetalleDia();
         }
 
+        function actualizarAvisoFechaDiferente() {
+            let hoy = new Date();
+            let anioHoy = hoy.getFullYear();
+            let mesHoy = hoy.getMonth();
+            let diaHoy = hoy.getDate();
+
+            let esFechaDistinta = diaSeleccionado !== null && (
+                anioVisual !== anioHoy ||
+                mesVisual !== mesHoy ||
+                parseInt(diaSeleccionado) !== diaHoy
+            );
+
+            let textoAviso = `⚠️ Estás trabajando en el Día ${diaSeleccionado} de ${nombresMeses[mesVisual]} ${anioVisual} (Hoy es ${diaHoy} de ${nombresMeses[mesHoy]} ${anioHoy}). Las transacciones y eventos se asignarán a la fecha seleccionada.`;
+
+            let avisoCal = document.getElementById('avisoFechaCalendario');
+            let avisoDet = document.getElementById('avisoFechaDetalle');
+
+            [avisoCal, avisoDet].forEach(el => {
+                if (el) {
+                    if (esFechaDistinta) {
+                        el.style.display = 'block';
+                        el.innerText = textoAviso;
+                    } else {
+                        el.style.display = 'none';
+                        el.innerText = '';
+                    }
+                }
+            });
+        }
+
         function seleccionarDia(dia) {
             diaSeleccionado = dia;
+            actualizarAvisoFechaDiferente();
             generarCalendario();
             actualizarDetalleDia();
             hablar(`Día ${dia} seleccionado.`);
@@ -514,7 +745,9 @@
                     html += `<div class='item-row'><span><b>[${t.tipo}]</b> ${t.desc} <i style="font-size:12px; color:#aaa;">(${t.hora || ''})</i></span> <span style='color: ${color}; font-weight: 900;'>S/. ${t.monto.toFixed(2)}</span></div>`;
                 });
                 eventosDia.forEach(e => {
-                    html += `<div class='item-row'><span>📅 <b>[Evento]</b> ${e.desc} <i style="font-size:12px; color:#aaa;">(${e.hora || '12:00'})</i></span> <span style='color: #FFFF00; font-weight: 900;'>S/. ${e.monto.toFixed(2)}</span></div>`;
+                    let etiqueta = e.esPago === false ? '[Evento]' : '[Pago / Evento]';
+                    let montoTexto = e.monto > 0 ? `S/. ${e.monto.toFixed(2)}` : 'Evento';
+                    html += `<div class='item-row'><span>🟣 <b>${etiqueta}</b> ${e.desc} <i style="font-size:12px; color:#aaa;">(${e.hora || '12:00'})</i></span> <span style='color: #D8B4FE; font-weight: 900;'>${montoTexto}</span></div>`;
                 });
             }
             let listEl = document.getElementById('listaDetalleDia');
@@ -525,8 +758,9 @@
             let banner = document.getElementById('alertBanner');
             let badge = document.getElementById('cornerBadge');
             let hoy = new Date();
+            let limiteActual = datosMes.presupuesto !== undefined ? datosMes.presupuesto : 500;
 
-            if (datosMes.presupuesto > 0 && datosMes.gastos > datosMes.presupuesto) {
+            if (limiteActual > 0 && (datosMes.gastos || 0) > limiteActual) {
                 if(badge) {
                     badge.className = "corner-badge exceeded";
                     badge.innerText = "🔴 Límite Superado";
@@ -544,11 +778,12 @@
                 let diferenciaTiempo = fechaEvento - hoy;
                 let diasRestantes = Math.ceil(diferenciaTiempo / (1000 * 60 * 60 * 24));
                 let avisoDias = ev.avisoDias !== undefined ? ev.avisoDias : 15;
+                let detalleMonto = ev.monto > 0 ? ` - S/. ${ev.monto}` : '';
 
                 if (diasRestantes === 0) {
-                    alertasActivas.push(`🚨 <b>¡HOY VENCE (${ev.hora || 'Todo el día'})!</b> "${ev.desc}" - S/. ${ev.monto}`);
+                    alertasActivas.push(`🚨 <b>¡HOY (${ev.hora || 'Todo el día'})!</b> "${ev.desc}"${detalleMonto}`);
                 } else if (diasRestantes > 0 && diasRestantes <= avisoDias) {
-                    alertasActivas.push(`⏳ Vence en ${diasRestantes} días (Día ${ev.dia}): "${ev.desc}" - S/. ${ev.monto}`);
+                    alertasActivas.push(`⏳ En ${diasRestantes} días (Día ${ev.dia} de ${nombresMeses[ev.mes]}): "${ev.desc}"${detalleMonto}`);
                 }
             });
 
@@ -576,15 +811,28 @@
             }
         }
 
+        function mostrarEstadoVoz(mensaje, esError = false) {
+            let statusEl = document.getElementById('lblVoiceStatus');
+            if (!statusEl) return;
+            statusEl.innerText = mensaje;
+            if (esError) {
+                statusEl.classList.add('error-state');
+            } else {
+                statusEl.classList.remove('error-state');
+            }
+        }
+
         function actualizarUI() {
             let ahorrosMes = datosMes.ahorrosDepositadosMes || 0;
-            let saldoDisponible = (datosMes.ingresos || 0) - (datosMes.gastos || 0) - ahorrosMes;
+            let gastosMes = datosMes.gastos || 0;
+            let presupuestoMes = datosMes.presupuesto !== undefined ? datosMes.presupuesto : 500;
+            let saldoDisponible = (datosMes.ingresos || 0) - gastosMes - ahorrosMes;
             
             let balEl = document.getElementById('lblBalance');
             if(balEl) balEl.innerText = `S/. ${saldoDisponible.toFixed(2)}`;
             
             let extEl = document.getElementById('lblExtras');
-            if(extEl) extEl.innerText = `Presupuesto: S/. ${(datosMes.presupuesto || 0).toFixed(2)} | Ahorros Bloqueados: S/. ${(ahorrosGlobal || 0).toFixed(2)} | Meta: S/. ${(datosMes.metaAhorro || 0).toFixed(2)}`;
+            if(extEl) extEl.innerText = `Presupuesto: S/. ${presupuestoMes.toFixed(2)} | Gastos: S/. ${gastosMes.toFixed(2)} | Ahorros Bloqueados: S/. ${(ahorrosGlobal || 0).toFixed(2)} | Meta: S/. ${(datosMes.metaAhorro || 0).toFixed(2)}`;
 
             let htmlCat = "";
             let cats = datosMes.categorias || {};
@@ -612,10 +860,11 @@
             let eventosMesActual = (eventosGlobal || []).filter(e => e.anio === anioVisual && e.mes === mesVisual);
             let htmlEv = "";
             if (eventosMesActual.length === 0) {
-                htmlEv = "<div style='color: #888;'>No hay eventos programados para este mes.</div>";
+                htmlEv = "<div style='color: #888;'>No hay eventos ni pagos programados para este mes.</div>";
             } else {
                 for (let e of eventosMesActual) {
-                    htmlEv += `<div class='item-row'><span>📅 <b>Día ${e.dia} (${e.hora || '12:00'}):</b> ${e.desc}</span> <span style='color: #FFFF00; font-weight: 900;'>S/. ${e.monto.toFixed(2)}</span></div>`;
+                    let montoTexto = e.monto > 0 ? `S/. ${e.monto.toFixed(2)}` : 'Evento';
+                    htmlEv += `<div class='item-row'><span>🟣 <b>Día ${e.dia} (${e.hora || '12:00'}):</b> ${e.desc}</span> <span style='color: #D8B4FE; font-weight: 900;'>${montoTexto}</span></div>`;
                 }
             }
             let evEl = document.getElementById('listaEventos');
@@ -639,13 +888,17 @@
                 let tieneTransaccion = (datosMes.historial || []).some(h => parseInt(h.dia) === i);
 
                 let clase = '';
-                if (i === diaSeleccionado) clase += ' selected';
-                if (tieneEvento) clase += ' has-event';
                 if (tieneTransaccion) clase += ' has-trans';
+                if (tieneEvento) clase += ' has-event';
+                if (i === diaSeleccionado) clase += ' selected';
 
                 let indicadoresHtml = "";
-                if (tieneTransaccion) indicadoresHtml += `<div class='cal-dot' title='Transacción'></div>`;
-                if (tieneEvento) indicadoresHtml += `<div class='cal-dot cal-dot-event' title='Evento'></div>`;
+                if (tieneTransaccion || tieneEvento) {
+                    indicadoresHtml = "<div class='cal-dots-row'>";
+                    if (tieneTransaccion) indicadoresHtml += `<div class='cal-dot' title='Transacción'></div>`;
+                    if (tieneEvento) indicadoresHtml += `<div class='cal-dot cal-dot-event' title='Evento / Pago'></div>`;
+                    indicadoresHtml += "</div>";
+                }
 
                 calContainer.innerHTML += `<div class='cal-day ${clase}' onclick="seleccionarDia(${i})"><span style='font-size:12px; color:#fff; font-weight:900;'>${i}</span>${indicadoresHtml}</div>`;
             }
@@ -720,16 +973,22 @@
             }
         }
 
-        // --- FUNCIONES DE LECTURA POR VOZ ESPECÍFICAS ---
+        function montoSeguroCero(val) {
+            let num = Number(val);
+            if (!Number.isFinite(num) || num === 0) return "0.00";
+            return num.toFixed(2);
+        }
+
+        // --- FUNCIONES DE LECTURA POR VOZ ---
         function leerIngresosDelMes() {
             let ingresos = (datosMes.historial || []).filter(h => h.tipo === 'Ingreso');
             if (ingresos.length === 0) {
-                hablar(`No hay ingresos registrados en ${nombresMeses[mesVisual]}.`);
+                hablar(`No hay ingresos registrados en ${nombresMeses[mesVisual]}. Total: 0.00 soles.`);
                 return;
             }
-            let texto = `Ingresos del mes de ${nombresMeses[mesVisual]}: Total ${(datosMes.ingresos || 0).toFixed(2)} soles. Detalle: `;
+            let texto = `Ingresos del mes de ${nombresMeses[mesVisual]}: Total ${montoSeguroCero(datosMes.ingresos)} soles. Detalle: `;
             ingresos.forEach(i => {
-                texto += `${i.monto.toFixed(2)} soles por ${i.desc}, el día ${i.dia} a las ${i.hora || '12:00'}. `;
+                texto += `${montoSeguroCero(i.monto)} soles por ${i.desc}, el día ${i.dia} a las ${i.hora || '12:00'}. `;
             });
             hablar(texto);
         }
@@ -737,23 +996,23 @@
         function leerGastosDelMes() {
             let gastos = (datosMes.historial || []).filter(h => h.tipo === 'Gasto');
             if (gastos.length === 0) {
-                hablar(`No hay gastos registrados en ${nombresMeses[mesVisual]}.`);
+                hablar(`No hay gastos registrados en ${nombresMeses[mesVisual]}. Total: 0.00 soles.`);
                 return;
             }
-            let texto = `Gastos del mes de ${nombresMeses[mesVisual]}: Total ${(datosMes.gastos || 0).toFixed(2)} soles. Detalle: `;
+            let texto = `Gastos del mes de ${nombresMeses[mesVisual]}: Total ${montoSeguroCero(datosMes.gastos)} soles. Detalle: `;
             gastos.forEach(g => {
-                texto += `${g.monto.toFixed(2)} soles en ${g.desc}, el día ${g.dia} a las ${g.hora || '12:00'}. `;
+                texto += `${montoSeguroCero(g.monto)} soles en ${g.desc}, el día ${g.dia} a las ${g.hora || '12:00'}. `;
             });
             hablar(texto);
         }
 
         function leerEstadoAhorros() {
-            let texto = `Estado de ahorros. Actualmente posee ${(ahorrosGlobal || 0).toFixed(2)} soles en ahorros bloqueados. La meta de ahorro establecida es de ${(datosMes.metaAhorro || 0).toFixed(2)} soles. `;
+            let texto = `Estado de ahorros. Actualmente posee ${montoSeguroCero(ahorrosGlobal)} soles en ahorros bloqueados. La meta de ahorro establecida es de ${montoSeguroCero(datosMes.metaAhorro)} soles. `;
             let movimientosAhorros = (datosMes.historial || []).filter(h => h.tipo === 'Ahorros');
             if (movimientosAhorros.length > 0) {
                 texto += "Movimientos de ahorros este mes: ";
                 movimientosAhorros.forEach(m => {
-                    texto += `${m.desc} de ${m.monto.toFixed(2)} soles, el día ${m.dia} de ${nombresMeses[mesVisual]} a las ${m.hora || '12:00'}. `;
+                    texto += `${m.desc} de ${montoSeguroCero(m.monto)} soles, el día ${m.dia} de ${nombresMeses[mesVisual]} a las ${m.hora || '12:00'}. `;
                 });
             } else {
                 texto += "No hay movimientos de ahorros registrados este mes.";
@@ -761,7 +1020,74 @@
             hablar(texto);
         }
 
-        // --- VOZ INTELIGENTE CON PROTECCIÓN ANTI-BLOQUEO ---
+        function leerResumenDelDia() {
+            let dia = parseInt(diaSeleccionado || new Date().getDate()) || 1;
+            let transDia = (datosMes.historial || []).filter(h => parseInt(h.dia) === dia);
+            let eventosDia = (eventosGlobal || []).filter(e => e.anio === anioVisual && e.mes === mesVisual && parseInt(e.dia) === dia);
+
+            let ingDia = 0, gasDia = 0, ahoDia = 0;
+            transDia.forEach(t => {
+                let m = parseFloat(t.monto);
+                if (!Number.isFinite(m)) m = 0;
+                if (t.tipo === 'Ingreso') ingDia += m;
+                else if (t.tipo === 'Gasto') gasDia += m;
+                else if (t.tipo === 'Ahorros') ahoDia += m;
+            });
+
+            let balanceDia = ingDia - gasDia - ahoDia;
+            let texto = `Resumen financiero del día ${dia} de ${nombresMeses[mesVisual]}: ` +
+                `Ingresos: ${montoSeguroCero(ingDia)} soles. ` +
+                `Gastos: ${montoSeguroCero(gasDia)} soles. ` +
+                `Ahorros: ${montoSeguroCero(ahoDia)} soles. ` +
+                `Balance neto del día: ${montoSeguroCero(balanceDia)} soles.`;
+
+            if (eventosDia.length > 0) {
+                texto += ` Tienes ${eventosDia.length} eventos o pagos programados para este día.`;
+            }
+            hablar(texto);
+        }
+
+        function leerEstadoDelMes() {
+            let ingresosMes = parseFloat(datosMes.ingresos);
+            if (!Number.isFinite(ingresosMes)) ingresosMes = 0;
+
+            let gastosMes = parseFloat(datosMes.gastos);
+            if (!Number.isFinite(gastosMes)) gastosMes = 0;
+
+            let ahorrosMes = parseFloat(datosMes.ahorrosDepositadosMes);
+            if (!Number.isFinite(ahorrosMes)) ahorrosMes = 0;
+
+            let saldoMes = ingresosMes - gastosMes - ahorrosMes;
+
+            let presupuesto = parseFloat(datosMes.presupuesto);
+            if (!Number.isFinite(presupuesto)) presupuesto = 500;
+
+            let metaAhorro = parseFloat(datosMes.metaAhorro);
+            if (!Number.isFinite(metaAhorro)) metaAhorro = 0;
+
+            let texto = `Estado financiero del mes de ${nombresMeses[mesVisual]} ${anioVisual}. ` +
+                `Ingresos totales: ${montoSeguroCero(ingresosMes)} soles. ` +
+                `Gastos totales: ${montoSeguroCero(gastosMes)} soles. ` +
+                `Ahorros del mes: ${montoSeguroCero(ahorrosMes)} soles. ` +
+                `Saldo disponible actual: ${montoSeguroCero(saldoMes)} soles.`;
+
+            if (presupuesto > 0) {
+                if (gastosMes > presupuesto) {
+                    texto += ` ¡Alerta! Ha superado su presupuesto límite de ${montoSeguroCero(presupuesto)} soles.`;
+                } else {
+                    let restante = presupuesto - gastosMes;
+                    texto += ` Su presupuesto es de ${montoSeguroCero(presupuesto)} soles, le quedan ${montoSeguroCero(restante)} soles disponibles.`;
+                }
+            }
+
+            if (metaAhorro > 0) {
+                texto += ` Su meta de ahorro es de ${montoSeguroCero(metaAhorro)} soles.`;
+            }
+
+            hablar(texto);
+        }
+
+        // --- VOZ INTELIGENTE ---
         function iniciarReconocimientoVoz() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -772,19 +1098,18 @@
             try {
                 const recognition = new SpeechRecognition();
                 recognition.lang = 'es-PE';
-                let statusEl = document.getElementById('lblVoiceStatus');
-                if(statusEl) statusEl.innerText = "🎤 Escuchando orden...";
+                mostrarEstadoVoz("🎤 Escuchando orden...", false);
                 hablar("Escuchando comando.");
 
                 recognition.onresult = function(event) {
                     let texto = event.results[0][0].transcript.toLowerCase();
-                    if(statusEl) statusEl.innerText = `Voz: "${texto}"`;
                     procesarComandoVoz(texto);
                 };
 
                 recognition.onerror = function() {
-                    if(statusEl) statusEl.innerText = "⚠️ No se entendió el audio.";
-                    hablar("No se reconoció el audio.");
+                    let ejemplo = "Por ejemplo, di: 'Pagar 1500 soles de luz el 30 de diciembre'.";
+                    mostrarEstadoVoz(`⚠️ No se entendió el audio. ${ejemplo}`, true);
+                    hablar(`No se entendió el audio. ${ejemplo}`);
                 };
 
                 recognition.start();
@@ -793,97 +1118,263 @@
             }
         }
 
-        function procesarComandoVoz(texto) {
-            let numeros = texto.match(/\d+(\.\d+)?/g);
-            let monto = numeros ? parseFloat(numeros[0]) : 0;
-            let horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            let diaActual = diaSeleccionado || new Date().getDate();
+        function rechazarComandoVoz(textoEscuchado) {
+            let ejemplo = "Di por ejemplo: 'Pagar 1500 soles de luz el 30 de diciembre' o 'Gasto 50 comida'.";
+            mostrarEstadoVoz(`⚠️ Orden no válida ("${textoEscuchado}"). ${ejemplo}`, true);
+            hablar(`La orden no es válida. ${ejemplo}`);
+        }
 
-            if (texto.includes("meta de ahorro") || (texto.includes("meta") && texto.includes("ahorro")) || (texto.includes("meta") && !texto.includes("depositar") && !texto.includes("retirar"))) {
+        function procesarComandoVoz(texto) {
+            let textoLimpio = texto.replace(/(\d+)\s*[.,]\s*(\d+)/g, "$1.$2");
+            let numeros = textoLimpio.match(/\d+(\.\d+)?/g);
+            let horaActual = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let diaActualReal = new Date().getDate();
+            let diaBase = diaSeleccionado || diaActualReal;
+
+            function extraerMontoSoles(fallbackNums) {
+                let mSoles = textoLimpio.match(/(\d+(?:\.\d+)?)\s*(?:soles|sol)/);
+                if (mSoles) return parseFloat(mSoles[1]);
+                if (fallbackNums && fallbackNums.length > 0) return parseFloat(fallbackNums[0]);
+                return NaN;
+            }
+
+            if (textoLimpio.includes("meta de ahorro") || (textoLimpio.includes("meta") && !textoLimpio.includes("depositar") && !textoLimpio.includes("retirar"))) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
                 datosMes.metaAhorro = monto;
                 guardarMes();
+                mostrarEstadoVoz(`✅ Meta de ahorro: S/. ${monto.toFixed(2)}`, false);
                 hablar(`Meta de ahorro establecida en ${monto} soles.`);
                 return;
             }
-            if (texto.includes("depositar") && texto.includes("ahorro")) {
+
+            if (textoLimpio.includes("depositar") && textoLimpio.includes("ahorro")) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
+                let diaMov = diaBase;
+                let matchDia = textoLimpio.match(/(?:el|día|dia)\s+(\d+)/);
+                if (matchDia) diaMov = parseInt(matchDia[1]);
+
                 ahorrosGlobal += monto;
                 datosMes.ahorrosDepositadosMes = (datosMes.ahorrosDepositadosMes || 0) + monto;
-                datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Depósito a ahorros', hora: horaActual, dia: diaActual });
+                datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Depósito a ahorros', hora: horaActual, dia: diaMov });
                 guardarMes();
-                hablar(`Se depositaron ${monto} soles a ahorros y se descontaron de su saldo.`);
+                mostrarEstadoVoz(`✅ Depositado S/. ${monto.toFixed(2)} a ahorros (Día ${diaMov})`, false);
+                hablar(`Se depositaron ${monto} soles a ahorros para el día ${diaMov}.`);
                 return;
             }
-            if (texto.includes("retirar") && texto.includes("ahorro")) {
+
+            if (textoLimpio.includes("retirar") && textoLimpio.includes("ahorro")) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
+                let diaMov = diaBase;
+                let matchDia = textoLimpio.match(/(?:el|día|dia)\s+(\d+)/);
+                if (matchDia) diaMov = parseInt(matchDia[1]);
+
                 if (ahorrosGlobal >= monto) {
                     ahorrosGlobal -= monto;
                     datosMes.ahorrosDepositadosMes = Math.max(0, (datosMes.ahorrosDepositadosMes || 0) - monto);
-                    datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Retiro de ahorros', hora: horaActual, dia: diaActual });
+                    datosMes.historial.push({ tipo: 'Ahorros', monto: monto, desc: 'Retiro de ahorros', hora: horaActual, dia: diaMov });
                     guardarMes();
-                    hablar(`Se retiraron ${monto} soles de ahorros y regresaron a su saldo.`);
+                    mostrarEstadoVoz(`✅ Retirado S/. ${monto.toFixed(2)} de ahorros (Día ${diaMov})`, false);
+                    hablar(`Se retiraron ${monto} soles de ahorros para el día ${diaMov}.`);
                 } else {
+                    mostrarEstadoVoz("⚠️ Fondos insuficientes en ahorros.", true);
                     hablar("Fondos insuficientes en ahorros.");
                 }
                 return;
             }
-            if (texto.includes("pagar") || texto.includes("programar") || texto.includes("evento")) {
-                let diaNum = numeros && numeros.length > 1 ? parseInt(numeros[1]) : diaActual;
-                let desc = texto.replace(/\d+/g, "").replace(/soles|el|de|del|pagar|programar/g, "").trim();
-                if (!desc) desc = "Pago programado";
 
-                eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: diaNum, hora: horaActual, desc: desc, monto: monto, avisoDias: 15 });
-                guardarMes();
-                hablar(`Evento programado para el día ${diaNum}.`);
+            if (textoLimpio.includes("presupuestar") || textoLimpio.includes("presupuesto")) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
+                if (textoLimpio.includes("gasto") && textoLimpio.includes("presupuestar")) {
+                    datosMes.presupuesto = (datosMes.presupuesto || 0) + monto;
+                    guardarMes();
+                    mostrarEstadoVoz(`✅ Gasto presupuestado agregado: S/. ${monto.toFixed(2)} (Total presupuesto: S/. ${datosMes.presupuesto.toFixed(2)})`, false);
+                    hablar(`Se sumaron ${monto} soles al presupuesto de gastos.`);
+                } else {
+                    datosMes.presupuesto = monto;
+                    guardarMes();
+                    mostrarEstadoVoz(`✅ Presupuesto establecido en S/. ${monto.toFixed(2)}`, false);
+                    hablar(`Presupuesto establecido en ${monto} soles.`);
+                }
                 return;
             }
-            if (texto.includes("presupuesto")) {
-                datosMes.presupuesto = monto;
+
+            if (textoLimpio.includes("pagar") || textoLimpio.includes("programar") || textoLimpio.includes("evento") || textoLimpio.includes("actividad") || textoLimpio.includes("recordatorio")) {
+                let mesDestino = mesVisual;
+                let anioDestino = anioVisual;
+                const mesesMap = {
+                    "enero": 0, "febrero": 1, "marzo": 2, "abril": 3, "mayo": 4, "junio": 5,
+                    "julio": 6, "agosto": 7, "septiembre": 8, "octubre": 9, "noviembre": 10, "diciembre": 11
+                };
+                for (let mName in mesesMap) {
+                    if (new RegExp(`\\b${mName}\\b`).test(textoLimpio)) {
+                        mesDestino = mesesMap[mName];
+                        break;
+                    }
+                }
+
+                let maxDiasMes = new Date(anioDestino, mesDestino + 1, 0).getDate();
+
+                let diaNum = diaBase;
+                let matchDia = textoLimpio.match(/(?:el|día|dia)\s+(\d{1,2})\b/);
+                if (matchDia) {
+                    diaNum = parseInt(matchDia[1]);
+                } else if (textoLimpio.includes("próxima semana") || textoLimpio.includes("proxima semana") || textoLimpio.includes("siguiente semana") || textoLimpio.includes("en una semana")) {
+                    diaNum = diaBase + 7;
+                } else if (textoLimpio.includes("fin de semana")) {
+                    diaNum = diaBase + 2;
+                } else if (textoLimpio.includes("esta semana")) {
+                    diaNum = diaBase;
+                }
+
+                if (diaNum < 1) diaNum = 1;
+                if (diaNum > maxDiasMes) diaNum = maxDiasMes;
+
+                let montoEvento = 0;
+                let mSolesEv = textoLimpio.match(/(\d+(?:\.\d+)?)\s*(?:soles|sol)/);
+                if (mSolesEv) {
+                    montoEvento = parseFloat(mSolesEv[1]);
+                } else if (numeros && numeros.length > 0) {
+                    let numsCandidatos = numeros.map(n => parseFloat(n)).filter(n => !matchDia || n !== parseInt(matchDia[1]));
+                    if (numsCandidatos.length > 0) {
+                        montoEvento = numsCandidatos[0];
+                    } else if (!matchDia) {
+                        montoEvento = parseFloat(numeros[0]);
+                    }
+                }
+
+                if ((textoLimpio.includes("soles") || textoLimpio.includes("sol")) && isNaN(montoEvento)) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
+
+                let esPago = textoLimpio.includes("pagar") || montoEvento > 0;
+                let desc = textoLimpio
+                    .replace(/\d+(\.\d+)?/g, " ")
+                    .replace(/\b(soles|sol|el|la|los|las|de|del|al|a|en|por|para|pagar|programar|evento|actividad|recordatorio|semana|próxima|proxima|siguiente|esta|fin|día|dia|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                if (!desc) desc = esPago ? "Pago programado" : "Evento programado";
+                desc = desc.charAt(0).toUpperCase() + desc.slice(1);
+
+                eventosGlobal.push({
+                    anio: anioDestino,
+                    mes: mesDestino,
+                    dia: diaNum,
+                    hora: horaActual,
+                    desc: desc,
+                    monto: montoEvento || 0,
+                    esPago: esPago,
+                    avisoDias: 15
+                });
                 guardarMes();
-                hablar(`Presupuesto establecido en ${monto} soles.`);
+
+                if (mesDestino !== mesVisual || anioDestino !== anioVisual) {
+                    anioVisual = anioDestino;
+                    mesVisual = mesDestino;
+                    diaSeleccionado = diaNum;
+                    sincronizarSelectorConVista();
+                    cargarDatosMes();
+                } else {
+                    diaSeleccionado = diaNum;
+                    guardarMes();
+                }
+
+                let tipoTexto = esPago ? "Pago" : "Evento";
+                let detalleVoz = montoEvento > 0 ? ` por ${montoEvento} soles` : "";
+                mostrarEstadoVoz(`✅ ${tipoTexto} "${desc}" programado para el día ${diaNum} de ${nombresMeses[mesDestino]}${montoEvento > 0 ? ` (S/. ${montoEvento.toFixed(2)})` : ""}`, false);
+                hablar(`${tipoTexto} ${desc} programado para el día ${diaNum} de ${nombresMeses[mesDestino]}${detalleVoz}.`);
                 return;
             }
-            if (texto.includes("gasto") || texto.includes("gasté")) {
+
+            if (textoLimpio.includes("gasto") || textoLimpio.includes("gasté") || textoLimpio.includes("gaste")) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
                 let catKey = "📦 Otros";
-                if (texto.match(/aliment|comida|mercado|almuerzo|cena|desayuno|pan|fruta/)) catKey = "🍔 Alimentación";
-                else if (texto.match(/transporte|pasaje|combustible|gasolina|taxi|uber|colectivo/)) catKey = "🚗 Transporte";
-                else if (texto.match(/servicio|luz|agua|internet|gas|telefono/)) catKey = "💡 Servicios";
-                else if (texto.match(/entretenimiento|juego|juegos|cine|streaming|netflix|spotify|diversion|fiesta/)) catKey = "🎬 Entretenimiento";
+                if (textoLimpio.match(/aliment|comida|mercado|almuerzo|cena|desayuno|pan|fruta/)) catKey = "🍔 Alimentación";
+                else if (textoLimpio.match(/transporte|pasaje|combustible|gasolina|taxi|uber|colectivo/)) catKey = "🚗 Transporte";
+                else if (textoLimpio.match(/servicio|luz|agua|internet|gas|telefono/)) catKey = "💡 Servicios";
+                else if (textoLimpio.match(/entretenimiento|juego|juegos|cine|streaming|netflix|spotify|diversion|fiesta/)) catKey = "🎬 Entretenimiento";
 
                 let descGasto = catKey;
-                let palabras = texto.replace(/gasto|gasté|soles|\d+/g, "").trim();
-                if (palabras.length > 2) {
+                let palabras = textoLimpio
+                    .replace(/\b(gasto|gasté|gaste|soles|sol|el|día|dia)\b/g, " ")
+                    .replace(/\d+(\.\d+)?/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                if (palabras.length > 1) {
                     descGasto = `${catKey} (${palabras.charAt(0).toUpperCase() + palabras.slice(1)})`;
                 }
 
+                let diaMov = diaBase;
+                let matchDia = textoLimpio.match(/(?:el|día|dia)\s+(\d{1,2})\b/);
+                if (matchDia) diaMov = parseInt(matchDia[1]);
+
                 datosMes.gastos = (datosMes.gastos || 0) + monto;
                 datosMes.categorias[catKey] = (datosMes.categorias[catKey] || 0) + monto;
-                datosMes.historial.push({ tipo: 'Gasto', monto: monto, desc: descGasto, hora: horaActual, dia: diaActual });
+                datosMes.historial.push({ tipo: 'Gasto', monto: monto, desc: descGasto, hora: horaActual, dia: diaMov });
                 guardarMes();
-                hablar(`Gasto de ${monto} soles registrado en ${catKey}.`);
+                mostrarEstadoVoz(`✅ Gasto S/. ${monto.toFixed(2)} en ${catKey} (Día ${diaMov})`, false);
+                hablar(`Gasto de ${monto} soles registrado en ${catKey} para el día ${diaMov}.`);
                 return;
             }
-            if (texto.includes("ingreso") || texto.includes("ingresó")) {
+
+            if (textoLimpio.includes("ingreso") || textoLimpio.includes("ingresó") || textoLimpio.includes("ingreso")) {
+                let monto = extraerMontoSoles(numeros);
+                if (isNaN(monto) || monto <= 0) {
+                    rechazarComandoVoz(textoLimpio);
+                    return;
+                }
                 let descIngreso = "💵 Ingreso";
-                let palabras = texto.replace(/ingreso|ingresó|soles|\d+/g, "").trim();
-                if (palabras.length > 2) {
+                let palabras = textoLimpio
+                    .replace(/\b(ingreso|ingresó|ingreso|soles|sol|el|día|dia)\b/g, " ")
+                    .replace(/\d+(\.\d+)?/g, " ")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                if (palabras.length > 1) {
                     descIngreso = `💵 Ingreso (${palabras.charAt(0).toUpperCase() + palabras.slice(1)})`;
                 }
 
+                let diaMov = diaBase;
+                let matchDia = textoLimpio.match(/(?:el|día|dia)\s+(\d{1,2})\b/);
+                if (matchDia) diaMov = parseInt(matchDia[1]);
+
                 datosMes.ingresos = (datosMes.ingresos || 0) + monto;
-                datosMes.historial.push({ tipo: 'Ingreso', monto: monto, desc: descIngreso, hora: horaActual, dia: diaActual });
+                datosMes.historial.push({ tipo: 'Ingreso', monto: monto, desc: descIngreso, hora: horaActual, dia: diaMov });
                 guardarMes();
-                hablar(`Ingreso registrado de ${monto} soles.`);
+                mostrarEstadoVoz(`✅ Ingreso S/. ${monto.toFixed(2)} (Día ${diaMov})`, false);
+                hablar(`Ingreso registrado de ${monto} soles para el día ${diaMov}.`);
                 return;
             }
 
-            hablar("No entendí la orden. Intente decir 'gasto 200 streaming' o 'meta de ahorro 500'.");
+            rechazarComandoVoz(textoLimpio);
         }
 
         // --- ACCIONES MANUALES ---
         function registrarIngresoManual() {
             try {
+                let diaHoy = new Date().getDate();
                 let m = parseFloat(prompt("Monto del ingreso (S/.):"));
                 let desc = prompt("Descripción del ingreso (ej. Sueldo, Venta):", "Sueldo") || "Ingreso";
-                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let d = parseInt(prompt("Día del mes (1-31):", diaHoy)) || diaHoy;
                 let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
                 if (!isNaN(m) && m > 0) {
                     datosMes.ingresos = (datosMes.ingresos || 0) + m;
@@ -896,9 +1387,10 @@
 
         function registrarGastoManual() {
             try {
+                let diaHoy = new Date().getDate();
                 let m = parseFloat(prompt("Monto del gasto (S/.):"));
                 let descEspecifica = prompt("Detalle del gasto (ej. Streaming, Cine):", "Streaming") || "Gasto";
-                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let d = parseInt(prompt("Día del mes (1-31):", diaHoy)) || diaHoy;
                 let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
                 let keys = Object.keys(datosMes.categorias);
                 let opc = prompt("Elija categoría:\n1. 🍔 Alimentación\n2. 🚗 Transporte\n3. 💡 Servicios\n4. 🎬 Entretenimiento\n5. 📦 Otros", "4");
@@ -916,9 +1408,10 @@
 
         function gestionarAhorros() {
             try {
+                let diaHoy = new Date().getDate();
                 let accion = prompt("¿Qué desea hacer?\n1. Depositar a ahorros (Descuenta de tu saldo)\n2. Retirar de ahorros (Regresa a tu saldo)", "1");
                 let m = parseFloat(prompt("Monto (S/.):"));
-                let d = parseInt(prompt("Día del mes (1-31):", diaSeleccionado)) || diaSeleccionado;
+                let d = parseInt(prompt("Día del mes (1-31):", diaHoy)) || diaHoy;
                 let h = prompt("Hora:", new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) || "12:00";
 
                 if (!isNaN(m) && m > 0) {
@@ -940,16 +1433,33 @@
             } catch(e) { console.error(e); }
         }
 
-        function programarEventoManual() {
+        function programarPagoManual() {
             try {
-                let desc = prompt("Descripción del pago o evento:", "Pagar luz");
-                let dia = parseInt(prompt("Día del mes:", diaSeleccionado)) || diaSeleccionado;
+                let diaHoy = new Date().getDate();
+                let desc = prompt("Descripción del pago:", "Pagar luz");
+                let dia = parseInt(prompt("Día del mes:", diaHoy)) || diaHoy;
                 let h = prompt("Hora:", "10:00") || "10:00";
-                let monto = parseFloat(prompt("Monto (S/.):", "1500")) || 0;
+                let monto = parseFloat(prompt("Monto a pagar (S/.):", "100")) || 0;
                 let avisoDias = parseInt(prompt("Días de anticipación para avisos (Predeterminado 15):", "15")) || 15;
 
                 if (desc && !isNaN(monto)) {
-                    eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: dia, hora: h, desc: desc, monto: monto, avisoDias: avisoDias });
+                    eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: dia, hora: h, desc: desc, monto: monto, esPago: true, avisoDias: avisoDias });
+                    guardarMes();
+                    hablar(`Pago programado.`);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function programarEventoSoloManual() {
+            try {
+                let diaHoy = new Date().getDate();
+                let desc = prompt("Nombre o descripción del evento:", "Reunión / Actividad");
+                let dia = parseInt(prompt("Día del mes:", diaHoy)) || diaHoy;
+                let h = prompt("Hora:", "10:00") || "10:00";
+                let avisoDias = parseInt(prompt("Días de anticipación para avisos (Predeterminado 15):", "15")) || 15;
+
+                if (desc) {
+                    eventosGlobal.push({ anio: anioVisual, mes: mesVisual, dia: dia, hora: h, desc: desc, monto: 0, esPago: false, avisoDias: avisoDias });
                     guardarMes();
                     hablar(`Evento programado.`);
                 }
@@ -958,8 +1468,13 @@
 
         function configurarPresupuesto() {
             try {
-                let m = parseFloat(prompt("Ingrese presupuesto límite para este mes (S/.):"));
-                if (!isNaN(m)) { datosMes.presupuesto = m; guardarMes(); hablar("Presupuesto actualizado."); }
+                let actual = datosMes.presupuesto !== undefined ? datosMes.presupuesto : 500;
+                let m = parseFloat(prompt("Ajuste el monto límite para este mes (S/.):", actual));
+                if (!isNaN(m) && m >= 0) {
+                    datosMes.presupuesto = m;
+                    guardarMes();
+                    hablar(`Monto límite ajustado a ${m} soles.`);
+                }
             } catch(e) { console.error(e); }
         }
 
@@ -972,7 +1487,7 @@
 
         function borrarDatosMes() {
             if (confirm("¿Limpiar todos los registros de este mes seleccionado?")) {
-                localStorage.removeItem(obtenerClaveMes());
+                localStorage.removeItem(obtenerClaveMes(anioVisual, mesVisual));
                 cargarDatosMes();
                 hablar("Mes reiniciado.");
             }
